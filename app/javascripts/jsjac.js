@@ -4730,10 +4730,10 @@ JSJaCWebSocketConnection.prototype._handleOpenStream = function(event) {
 
   open = event.data;
   // skip XML prolog if any
-  open = open.substr(open.indexOf('<stream:stream'));
-  if (open.substr(-2) !== '/>' && open.substr(-16) !== '</stream:stream>') {
+  open = open.substr(open.indexOf('<open'));
+  if (open.substr(-2) !== '/>' && open.substr(-16) !== '<close/>') {
     // some servers send closed opening tag, some not
-    open += '</stream:stream>';
+    open += '<close/>';
   }
   stream = this._parseXml(open);
   if(!stream) {
@@ -4782,7 +4782,7 @@ JSJaCWebSocketConnection.prototype.disconnect = function() {
   this._connected = false;
 
   this.oDbg.log('Disconnecting', 4);
-  this._sendRaw('</stream:stream>', JSJaC.bind(this._cleanupWebSocket, this));
+  this._sendRaw('<close/>', JSJaC.bind(this._cleanupWebSocket, this));
 
   this.oDbg.log('Disconnected', 2);
   this._handleEvent('ondisconnect');
@@ -4857,8 +4857,8 @@ JSJaCWebSocketConnection.prototype._parseXml = function(s) {
 
   this.oDbg.log('Parsing: ' + s, 4);
   try {
-    doc = XmlDocument.create('stream', NS_STREAM);
-    if(s.trim() == '</stream:stream>') {
+    doc = XmlDocument.create('stream', NS_STREAM); //DA VERIFICARE THOMAS
+    if(s.trim() == '<close/>') {
       // Consider session as closed
       this.oDbg.log("session terminated", 1);
 
@@ -4877,9 +4877,9 @@ JSJaCWebSocketConnection.prototype._parseXml = function(s) {
       this._handleEvent('ondisconnect');
 
       return null;
-    } else if(s.indexOf('<stream:stream') === -1) {
+    } else if(s.indexOf('<open') === -1) {
       // Wrap every stanza into stream element, so that XML namespaces work properly.
-      doc.loadXML("<stream:stream xmlns:stream='" + NS_STREAM + "' xmlns='jabber:client'>" + s + "</stream:stream>");
+      doc.loadXML("<open xmlns:stream='" + NS_STREAM + "' xmlns='jabber:client'>" + s + "<close/>"); //DA VERIFICARE THOMAS
       return doc.documentElement.firstChild;
     } else {
       doc.loadXML(s);
@@ -4905,11 +4905,11 @@ JSJaCWebSocketConnection.prototype._getInitialRequestString = function() {
     streamto = this.authhost;
   }
 
-  reqstr = '<stream:stream to="' + streamto + '" xmlns="jabber:client" xmlns:stream="' + NS_STREAM + '"';
+  reqstr = '<open to="' + streamto + '" xmlns="jabber:client" xmlns:stream="' + NS_STREAM + '"'; //DA VERIFICARE THOMAS
   if (this.authtype === 'sasl' || this.authtype === 'saslanon') {
     reqstr += ' version="1.0"';
   }
-  reqstr += '>';
+  reqstr += '/>';
   return reqstr;
 };
 
@@ -5009,7 +5009,7 @@ JSJaCWebSocketConnection.prototype._reInitStream = function(cb) {
     streamto = this.authhost;
   }
 
-  reqstr = '<stream:stream xmlns:stream="' + NS_STREAM + '" xmlns="jabber:client" to="' + streamto + '" version="1.0">';
+  reqstr = '<open xmlns:stream="' + NS_STREAM + '" xmlns="jabber:client" to="' + streamto + '" version="1.0"/>'; //DA VERIFICARE THOMAS
   this._sendRaw(reqstr, cb);
 };
 
