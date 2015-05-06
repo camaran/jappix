@@ -4730,10 +4730,10 @@ JSJaCWebSocketConnection.prototype._handleOpenStream = function(event) {
 
   open = event.data;
   // skip XML prolog if any
-  open = open.substr(open.indexOf('<stream:stream'));
-  if (open.substr(-2) !== '/>' && open.substr(-16) !== '</stream:stream>') {
+  open = open.substr(open.indexOf('<open'));
+  if (open.substr(-2) !== '/>' && open.substr(-16) !== '<close/>') {
     // some servers send closed opening tag, some not
-    open += '</stream:stream>';
+    open += '<close/>';
   }
   stream = this._parseXml(open);
   if(!stream) {
