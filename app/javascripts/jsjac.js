@@ -6,7 +6,7 @@ This is the JSJaC library for Jappix (from trunk)
 -------------------------------------------------
 
 Licenses: Mozilla Public License version 1.1, GNU GPL, AGPL
-Authors: Stefan Strigler, Valérian Saliou, Zash, Maranda
+Authors: Stefan Strigler, ValÃ©rian Saliou, Zash, Maranda, Andreas Guth
 
 */
 
@@ -4730,10 +4730,10 @@ JSJaCWebSocketConnection.prototype._handleOpenStream = function(event) {
 
   open = event.data;
   // skip XML prolog if any
-  open = open.substr(open.indexOf('<stream:stream'));
-  if (open.substr(-2) !== '/>' && open.substr(-16) !== '</stream:stream>') {
+  open = open.substr(open.indexOf('<open'));
+  if (open.substr(-2) !== '/>' && open.substr(-7) !== '</open>') {
     // some servers send closed opening tag, some not
-    open += '</stream:stream>';
+    open += '</open>';
   }
   stream = this._parseXml(open);
   if(!stream) {
@@ -4782,7 +4782,8 @@ JSJaCWebSocketConnection.prototype.disconnect = function() {
   this._connected = false;
 
   this.oDbg.log('Disconnecting', 4);
-  this._sendRaw('</stream:stream>', JSJaC.bind(this._cleanupWebSocket, this));
+  var close = '<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" />';
+  this._sendRaw(close, JSJaC.bind(this._cleanupWebSocket, this));
 
   this.oDbg.log('Disconnected', 2);
   this._handleEvent('ondisconnect');
@@ -4858,7 +4859,7 @@ JSJaCWebSocketConnection.prototype._parseXml = function(s) {
   this.oDbg.log('Parsing: ' + s, 4);
   try {
     doc = XmlDocument.create('stream', NS_STREAM);
-    if(s.trim() == '</stream:stream>') {
+    if(s.indexOf('<close ') == 0) {
       // Consider session as closed
       this.oDbg.log("session terminated", 1);
 
@@ -4905,11 +4906,11 @@ JSJaCWebSocketConnection.prototype._getInitialRequestString = function() {
     streamto = this.authhost;
   }
 
-  reqstr = '<stream:stream to="' + streamto + '" xmlns="jabber:client" xmlns:stream="' + NS_STREAM + '"';
+  reqstr = '<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="' + streamto + '" ';
   if (this.authtype === 'sasl' || this.authtype === 'saslanon') {
     reqstr += ' version="1.0"';
   }
-  reqstr += '>';
+  reqstr += '/>';
   return reqstr;
 };
 
@@ -5009,7 +5010,7 @@ JSJaCWebSocketConnection.prototype._reInitStream = function(cb) {
     streamto = this.authhost;
   }
 
-  reqstr = '<stream:stream xmlns:stream="' + NS_STREAM + '" xmlns="jabber:client" to="' + streamto + '" version="1.0">';
+  reqstr = '<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="' + streamto + '" version="1.0"/>';
   this._sendRaw(reqstr, cb);
 };
 
